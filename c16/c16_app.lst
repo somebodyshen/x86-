@@ -1,0 +1,98 @@
+     1                                           ;文件名：c13_app0.asm
+     2                                           ;文件说明：用户程序 
+     3                                  
+     4                                  ;===============================================================================
+     5                                  SECTION header vstart=0
+     6                                  
+     7 00000000 [00000000]                       program_length   dd program_end          ;程序总长度#0x00
+     8                                           
+     9 00000004 [28030000]                       head_len         dd header_end           ;程序头部的长度#0x04
+    10                                  
+    11 00000008 [00000000]                       prgentry         dd start                ;程序入口#0x08
+    12 0000000C [00000000]                       code_seg         dd section.code.start   ;代码段位置#0x0c
+    13 00000010 [53000000]                       code_len         dd code_end             ;代码段长度#0x10
+    14                                  
+    15 00000014 [00000000]                       data_seg         dd section.data.start   ;数据段位置#0x14
+    16 00000018 [40040000]                       data_len         dd data_end             ;数据段长度#0x18
+    17                                  
+    18 0000001C [00000000]                       stack_seg        dd section.stack.start  ;栈段位置#0x1c
+    19 00000020 [00080000]                       stack_len        dd stack_end            ;栈段长度#0x20
+    20                                               
+    21                                  ;-------------------------------------------------------------------------------
+    22                                           ;符号地址检索表
+    23 00000024 03000000                         salt_items       dd (header_end-salt)/256 ;#0x24
+    24                                  
+    25                                           salt:                                     ;#0x28
+    26 00000028 405072696E74537472-              PrintString      db  '@PrintString'
+    26 00000031 696E67             
+    27 00000034 00<rep F4h>                                  times 256-($-PrintString) db 0
+    28                                  
+    29 00000128 405465726D696E6174-              TerminateProgram db  '@TerminateProgram'
+    29 00000131 6550726F6772616D   
+    30 00000139 00<rep EFh>                                  times 256-($-TerminateProgram) db 0
+    31                                  
+    32 00000228 40526561644469736B-              ReadDiskData     db  '@ReadDiskData'
+    32 00000231 44617461           
+    33 00000235 00<rep F3h>                                  times 256-($-ReadDiskData) db 0
+    34                                  
+    35                                  header_end:
+    36                                  
+    37                                  ;===============================================================================
+    38                                  SECTION data vstart=0
+    39                                  
+    40 00000000 00<rep 400h>                     buffer times 1024 db  0         ;缓冲区
+    41                                  
+    42 00000400 0D0A0D0A                         message_1         db  0x0d,0x0a,0x0d,0x0a
+    43 00000404 2A2A2A2A2A2A2A2A2A-                                db  '**********User program is runing**********'
+    43 0000040D 2A557365722070726F-
+    43 00000416 6772616D2069732072-
+    43 0000041F 756E696E672A2A2A2A-
+    43 00000428 2A2A2A2A2A2A       
+    44 0000042E 0D0A00                                             db  0x0d,0x0a,0
+    45 00000431 20204469736B206461-              message_2         db  '  Disk data:',0x0d,0x0a,0
+    45 0000043A 74613A0D0A00       
+    46                                  
+    47                                  data_end:
+    48                                  
+    49                                  ;===============================================================================
+    50                                  SECTION stack vstart=0
+    51                                  
+    52 00000000 00<rep 800h>                    times 2048        db 0                    ;保留2KB的栈空间
+    53                                  
+    54                                  stack_end:
+    55                                  
+    56                                  ;===============================================================================
+    57                                        [bits 32]
+    58                                  ;===============================================================================
+    59                                  SECTION code vstart=0
+    60                                  
+    61                                  start:
+    62 00000000 8CD8                             mov eax,ds
+    63 00000002 8EE0                             mov fs,eax
+    64                                  
+    65 00000004 648E15[1C000000]                 mov ss,[fs:stack_seg]
+    66 0000000B BC[00080000]                     mov esp,stack_end
+    67                                  
+    68 00000010 648E1D[14000000]                 mov ds,[fs:data_seg]
+    69                                  
+    70 00000017 BB[00040000]                     mov ebx,message_1
+    71 0000001C 64FF1D[28000000]                 call far [fs:PrintString]
+    72                                  
+    73 00000023 B864000000                       mov eax,100                         ;逻辑扇区号100
+    74 00000028 BB[00000000]                     mov ebx,buffer                      ;缓冲区偏移地址
+    75 0000002D 64FF1D[28020000]                 call far [fs:ReadDiskData]          ;段间调用
+    76                                  
+    77 00000034 BB[31040000]                     mov ebx,message_2
+    78 00000039 64FF1D[28000000]                 call far [fs:PrintString]
+    79                                  
+    80 00000040 BB[00000000]                     mov ebx,buffer
+    81 00000045 64FF1D[28000000]                 call far [fs:PrintString]           ;too.
+    82                                  
+    83 0000004C 64FF1D[28010000]                 call far [fs:TerminateProgram]       ;将控制权返回到系统
+    84                                  
+    85                                  code_end:
+    86                                  
+    87                                  ;===============================================================================
+    88                                  SECTION trail
+    89                                  ;-------------------------------------------------------------------------------
+    90                                  program_end:

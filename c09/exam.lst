@@ -1,0 +1,8 @@
+     1                                  section data1 align=16
+     2 00000000 55                              db 0x55
+     3                                  
+     4                                  section data2 align=16
+     5 00000000 AA                              db 0xaa
+     6                                  
+     7                                  section data3 align=16
+     8 00000000 99                              db 0x99
